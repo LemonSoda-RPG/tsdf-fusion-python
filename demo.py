@@ -1,3 +1,4 @@
+# coding=utf-8
 """Fuse 1000 RGB-D images from the 7-scenes dataset into a TSDF voxel volume with 2cm resolution.
 """
 
@@ -27,6 +28,7 @@ if __name__ == "__main__":
     cam_pose = np.loadtxt("data/frame-%06d.pose.txt"%(i))  # 4x4 rigid transformation matrix
 
     # Compute camera view frustum and extend convex hull
+    # vol_bnds是一个三行二列的数组 每一行代表x,y,z 二列代表他们的最大值和最小值
     view_frust_pts = fusion.get_view_frustum(depth_im, cam_intr, cam_pose)
     vol_bnds[:,0] = np.minimum(vol_bnds[:,0], np.amin(view_frust_pts, axis=1))
     vol_bnds[:,1] = np.maximum(vol_bnds[:,1], np.amax(view_frust_pts, axis=1))
@@ -37,7 +39,7 @@ if __name__ == "__main__":
   # ======================================================================================================== #
   # Initialize voxel volume
   print("Initializing voxel volume...")
-  tsdf_vol = fusion.TSDFVolume(vol_bnds, voxel_size=0.02)
+  tsdf_vol = fusion.TSDFVolume(vol_bnds, voxel_size=0.02)  #通过构造函数构建好了了个vol  很多体素
 
   # Loop through RGB-D images and fuse them together
   t0_elapse = time.time()
@@ -52,6 +54,8 @@ if __name__ == "__main__":
     cam_pose = np.loadtxt("data/frame-%06d.pose.txt"%(i))
 
     # Integrate observation into voxel volume (assume color aligned with depth)
+
+    #主函数
     tsdf_vol.integrate(color_image, depth_im, cam_intr, cam_pose, obs_weight=1.)
 
   fps = n_imgs / (time.time() - t0_elapse)
@@ -60,6 +64,7 @@ if __name__ == "__main__":
   # Get mesh from voxel volume and save to disk (can be viewed with Meshlab)
   print("Saving mesh to mesh.ply...")
   verts, faces, norms, colors = tsdf_vol.get_mesh()
+   # 顶点坐标、面片索引、法线向量和顶点颜色
   fusion.meshwrite("mesh.ply", verts, faces, norms, colors)
 
   # Get point cloud from voxel volume and save to disk (can be viewed with Meshlab)
